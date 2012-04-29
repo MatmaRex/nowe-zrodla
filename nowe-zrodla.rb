@@ -63,17 +63,22 @@ queue = []
 list_since = Time.now.utc.iso8601
 producer_thread = Thread.new do
 	while true
-		puts Time.now
+		puts "Producer[#{Time.now.utc.iso8601}]: checking RC."
 		
-		new = s.API p "action=query&list=recentchanges&rcnamespace=0&rcprop=title|user|timestamp&rcshow=!bot|!redirect&rclimit=500&rctype=new&rcstart=#{list_since}&rcdir=newer"
+		new = s.API(
+			action: 'query',
+			list: 'recentchanges', rclimit: 500,
+			rctype: 'new', 
+			rcnamespace: 0, rcprop: 'title|user|timestamp', rcshow: '!bot|!redirect',
+			rcdir: 'newer', rcstart: list_since
+		)
 		
+		puts "Producer[#{Time.now.utc.iso8601}]: adding #{new['query']['recentchanges'].length} new to queue."
 		Thread.exclusive do
 			queue += new['query']['recentchanges']
 		end
 		
 		list_since = Time.now.utc.iso8601
-		
-		p new
 		
 		sleep NOTIFY_DELAY
 	end
@@ -87,11 +92,12 @@ consumer_thread = Thread.new do
 		Thread.exclusive do
 			h = queue.shift
 		end
-		p h
 		
-		p (Time.now.utc-NOTIFY_DELAY).iso8601
-		p h['timestamp']
+		puts "Consumer[#{Time.now.utc.iso8601}]: got an article #{h['title']}"
+		puts "Consumer[#{Time.now.utc.iso8601}]: article created at #{h['timestamp']}, waiting..."
 		sleep 1 until (Time.now.utc-NOTIFY_DELAY).iso8601 >= h['timestamp']
+		
+		puts "Consumer[#{Time.now.utc.iso8601}]: time to handle #{h['title']}"
 		
 		p = Page.new h['title']
 		
@@ -113,11 +119,10 @@ consumer_thread = Thread.new do
 			else
 				list.text += "\n\nOstrzegłbym wikipedystę [[User:#{h['user']}]] o braku źródeł w artykule [[#{h['title']}]]."
 			end
-			
-			puts 'woo'
 		end
 		
-		list.save if list.text != list.orig_text
+		list.save
+		puts "Consumer[#{Time.now.utc.iso8601}]: done. Sleeping..."
 	end
 end
 
