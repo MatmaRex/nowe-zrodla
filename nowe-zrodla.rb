@@ -53,23 +53,47 @@ $stdout.sync = $stderr.sync = true
 $s = s = Sunflower.new.login
 s.summary = 'powiadomienie o braku źródeł w artykule (test)'
 
+Thread.abort_on_exception = true
 
-# list_since = Marshal.load File.binread 'last_check-marshal' rescue Time.now.utc.to_s
+# Delay between creation of an article and notification, in seconds.
+NOTIFY_DELAY = 60*15
+
+queue = []
+
 list_since = Time.now.utc.iso8601
-
-while true
-	puts Time.now
-	
-	new = s.API p "action=query&list=recentchanges&rcnamespace=0&rcprop=title|user|timestamp&rcshow=!bot|!redirect&rclimit=500&rctype=new&rcstart=#{list_since}&rcdir=newer"
-	
-	list_since = Time.now.utc.iso8601
-	
-	p new
-	
-	new['query']['recentchanges'].each do |h|
-		p = Page.new h['title']
+producer_thread = Thread.new do
+	while true
+		puts Time.now
 		
+		new = s.API p "action=query&list=recentchanges&rcnamespace=0&rcprop=title|user|timestamp&rcshow=!bot|!redirect&rclimit=500&rctype=new&rcstart=#{list_since}&rcdir=newer"
+		
+		Thread.exclusive do
+			queue += new['query']['recentchanges']
+		end
+		
+		list_since = Time.now.utc.iso8601
+		
+		p new
+		
+		sleep NOTIFY_DELAY
+	end
+end
+
+consumer_thread = Thread.new do
+	while true
+		sleep 1 while queue.empty?
+		
+		h = nil
+		Thread.exclusive do
+			h = queue.shift
+		end
 		p h
+		
+		p (Time.now.utc-NOTIFY_DELAY).iso8601
+		p h['timestamp']
+		sleep 1 until (Time.now.utc-NOTIFY_DELAY).iso8601 >= h['timestamp']
+		
+		p = Page.new h['title']
 		
 		list = Page.new 'Wikipedysta:Matma_Rex/nowe bez źródeł'
 		
@@ -91,9 +115,9 @@ while true
 			puts 'woo'
 		end
 		
-		
 		list.save if list.text != list.orig_text
 	end
-	
-	sleep 60*10
 end
+
+producer_thread.join
+consumer_thread.join
