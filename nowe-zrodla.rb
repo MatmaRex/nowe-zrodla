@@ -104,6 +104,8 @@ consumer_thread = Thread.new do
 		else
 			if p.text =~ /\{\{ek/i
 				list.text += "\n\nOstrzegłbym wikipedystę [[User:#{h['user']}]] o braku źródeł w artykule [[#{h['title']}]], ale jest tam już EK."
+			elsif p.text =~ /\{\{disambig\}\}/i
+				list.text += "\n\nOstrzegłbym wikipedystę [[User:#{h['user']}]] o braku źródeł w artykule [[#{h['title']}]], ale to disambig."
 			elsif p.text =~ /\A#(patrz|redirect|przekieruj)/i
 				list.text += "\n\nOstrzegłbym wikipedystę [[User:#{h['user']}]] o braku źródeł w artykule [[#{h['title']}]], ale wygląda on na przekierowanie."
 			elsif p.text =~ /linki zewn/i
