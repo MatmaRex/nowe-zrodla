@@ -60,7 +60,7 @@ NOTIFY_DELAY = 60*15
 
 queue = []
 
-list_since = Time.now.utc.iso8601
+list_since = (Time.now.utc-NOTIFY_DELAY).iso8601
 producer_thread = Thread.new do
 	while true
 		puts "Producer[#{Time.now.utc.iso8601}]: checking RC."
@@ -86,7 +86,7 @@ end
 
 consumer_thread = Thread.new do
 	while true
-		sleep 1 while queue.empty?
+		sleep 10 while queue.empty?
 		
 		h = nil
 		Thread.exclusive do
@@ -95,7 +95,7 @@ consumer_thread = Thread.new do
 		
 		puts "Consumer[#{Time.now.utc.iso8601}]: got an article #{h['title']}"
 		puts "Consumer[#{Time.now.utc.iso8601}]: article created at #{h['timestamp']}, waiting..."
-		sleep 1 until (Time.now.utc-NOTIFY_DELAY).iso8601 >= h['timestamp']
+		sleep 10 until (Time.now.utc-NOTIFY_DELAY).iso8601 >= h['timestamp']
 		
 		puts "Consumer[#{Time.now.utc.iso8601}]: time to handle #{h['title']}"
 		
