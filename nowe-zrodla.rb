@@ -101,27 +101,32 @@ consumer_thread = Thread.new do
 		
 		p = Page.new h['title']
 		
-		list = Page.new 'Wikipedysta:Matma_Rex/nowe bez źródeł'
+		dowarn = false
+		why = ''
 		
 		if p.text == ''
-			list.text += "\n\nPowstał nowy artykuł wikipedysty [[User:#{h['user']}]] o nazwie [[#{h['title']}]], ale już go usunięto."
-		elsif p.text =~ /bibliografia|przypisy|źródł[ao]|literatura/i
-			list.text += "\n\nPowstał nowy artykuł wikipedysty [[User:#{h['user']}]] o nazwie [[#{h['title']}]], wygląda okej."
+			why = 'deleted'
+		elsif p.text =~ /bibliografia|źródł[ao]|literatura/i
+			why = 'willdo'
+		elsif p.text =~ /przypisy/i and p.text =~ /<ref/
+			why = 'perfect'
 		else
 			if p.text =~ /\{\{ek/i
-				list.text += "\n\nOstrzegłbym wikipedystę [[User:#{h['user']}]] o braku źródeł w artykule [[#{h['title']}]], ale jest tam już EK."
+				why = 'EK'
 			elsif p.text =~ /\{\{disambig\}\}/i
-				list.text += "\n\nOstrzegłbym wikipedystę [[User:#{h['user']}]] o braku źródeł w artykule [[#{h['title']}]], ale to disambig."
+				why = 'disambig'
 			elsif p.text =~ /\A#(patrz|redirect|przekieruj)/i
-				list.text += "\n\nOstrzegłbym wikipedystę [[User:#{h['user']}]] o braku źródeł w artykule [[#{h['title']}]], ale wygląda on na przekierowanie."
+				why = 'redirect'
 			elsif p.text =~ /linki zewn/i
-				list.text += "\n\nOstrzegłbym wikipedystę [[User:#{h['user']}]] o braku źródeł w artykule [[#{h['title']}]], ale ma on przynajmniej linki zewnętrzne."
+				why = 'linki zewn'
 			else
-				list.text += "\n\nOstrzegłbym wikipedystę [[User:#{h['user']}]] o braku źródeł w artykule [[#{h['title']}]]."
+				why = 'no sources!'
+				dowarn = true
 			end
 		end
 		
-		list.save
+		puts "Consumer[#{Time.now.utc.iso8601}]: article state: #{why}"
+		
 		puts "Consumer[#{Time.now.utc.iso8601}]: done. Sleeping..."
 	end
 end
