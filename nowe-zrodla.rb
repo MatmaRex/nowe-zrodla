@@ -74,10 +74,10 @@ consumer_thread = Thread.new do
 		
 		if p.text == ''
 			why = 'deleted'
-		elsif p.text =~ /bibliografia|źródł[ao]|literatura/i
-			why = 'willdo'
 		elsif p.text =~ /przypisy/i and p.text =~ /<ref/
 			why = 'perfect'
+		elsif p.text =~ /bibliografia|źródł[ao]|literatura/i
+			why = 'willdo'
 		else
 			if p.text =~ /\{\{ek/i
 				why = 'EK'
