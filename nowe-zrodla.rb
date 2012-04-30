@@ -4,47 +4,16 @@ require 'time'
 require 'pp'
 require 'io/console'
 
-# Notifies user / wikiproject about error report in articles.
-# 
-# articles is array of [title, [categories...]]
-def notify_user_zb ns, page, articles
-	ns_to_talk = {
-		'Wikipedysta' => 'Dyskusja wikipedysty',
-		'Wikipedystka' => 'Dyskusja wikipedysty',
-		'Wikiprojekt' => 'Dyskusja Wikiprojektu',
-	}
-	
-	p = Page.new "#{ns_to_talk[ns]}:#{page}"
-	
-	header = "== Nowy wpis na Zgłoś błąd =="
-	add_header = p.text.scan(/==[^\n]+==/)[-1] != header # jesli ostatni naglowek jest nasz, nie powtarzamy go
-	
-	signature = "[[Wikipedysta:Powiadomienia ZB|Powiadomienia ZB]] ([[Wikipedia:Zgłoś błąd w artykule/Powiadomienia|informacje]]) ~~"+"~~"+"~"
-	
-	lines = []
-	articles.each do |title, cats|
-		line = [
-			"Zgłoszono błąd w artykule [[#{title}]]",
-			"(kategori#{cats.length>1 ? 'e' : 'a'}: #{cats.map{|c| "[[:#{c}|]]"}.join(", ") })",
-			"–",
-			"[[Wikipedia:Zgłoś błąd w artykule##{title}|zobacz wpis]]."
-		].join ' '
-		
-		lines << line
-	end
+def drop_a_message talkpage, header, message, summary=header
+	p = Page.new talkpage
 	
 	p.text.rstrip!
 	p.text += "\n\n"
-	p.text += header+"\n" if add_header
-	p.text += lines.join("\n\n")
-	p.text += " "+signature
+	p.text += "== #{header} =="+"\n"
+	p.text += message
 	
-	summary_links = articles.map{|t,c| "[[Wikipedia:Zgłoś błąd w artykule##{t}|#{t}]]" }.join(', ')
-	p.save p.title, "powiadomienie o nowych wpisach na Zgłoś błąd – #{summary_links}"
+	p.save p.title, summary
 end
-
-
-
 
 $stdout.sync = $stderr.sync = true
 
@@ -126,6 +95,15 @@ consumer_thread = Thread.new do
 		end
 		
 		puts "Consumer[#{Time.now.utc.iso8601}]: article state: #{why}"
+		
+		if dowarn
+			puts "Consumer[#{Time.now.utc.iso8601}]: warning user #{h['user']}..."
+			volunteers = File.readlines('ochotnicy.txt')
+			
+			heading = "Prośba o źródła w artykule [[#{h['title']}]]"
+			message = "{{pamiętaj o źródłach|#{h['title']}|#{volunteers.sample.strip}}}"
+			drop_a_message "User talk:#{h['user']}", heading, message
+		end
 		
 		puts "Consumer[#{Time.now.utc.iso8601}]: done. Sleeping..."
 	end
