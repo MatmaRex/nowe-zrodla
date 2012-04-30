@@ -17,10 +17,9 @@ end
 
 $stdout.sync = $stderr.sync = true
 
-# $stderr.puts 'Input password:'
-# $s = s = Sunflower.new('pl.wikipedia.org').login('Powiadomienia ZB', STDIN.noecho(&:gets).strip)
-$s = s = Sunflower.new.login
-s.summary = 'powiadomienie o braku źródeł w artykule (test)'
+$stderr.puts 'Input password:'
+s = Sunflower.new('pl.wikipedia.org').login('MatmaBot', STDIN.noecho(&:gets).strip)
+s.summary = nil # ensure we can't save unless summary for edit given
 
 Thread.abort_on_exception = true
 
