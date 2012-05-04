@@ -31,80 +31,99 @@ queue = []
 list_since = (Time.now.utc-NOTIFY_DELAY).iso8601
 producer_thread = Thread.new do
 	while true
-		puts "Producer[#{Time.now.utc.iso8601}]: checking RC."
-		
-		new = s.API(
-			action: 'query',
-			list: 'recentchanges', rclimit: 500,
-			rctype: 'new', 
-			rcnamespace: 0, rcprop: 'title|user|timestamp', rcshow: '!bot|!redirect',
-			rcdir: 'newer', rcstart: list_since
-		)
-		
-		puts "Producer[#{Time.now.utc.iso8601}]: adding #{new['query']['recentchanges'].length} new to queue."
-		Thread.exclusive do
-			queue += new['query']['recentchanges']
+		begin
+			puts "Producer[#{Time.now.utc.iso8601}]: checking RC."
+			
+			new = s.API(
+				action: 'query',
+				list: 'recentchanges', rclimit: 500,
+				rctype: 'new', 
+				rcnamespace: 0, rcprop: 'title|user|timestamp', rcshow: '!bot|!redirect',
+				rcdir: 'newer', rcstart: list_since
+			)
+			
+			puts "Producer[#{Time.now.utc.iso8601}]: adding #{new['query']['recentchanges'].length} new to queue."
+			Thread.exclusive do
+				queue += new['query']['recentchanges']
+			end
+			
+			list_since = Time.now.utc.iso8601
+			
+			sleep NOTIFY_DELAY
+			
+		rescue Errno::ETIMEDOUT, RestClient::RequestFailed, RestClient::ServerBrokeConnection, SocketError
+			puts "Producer[#{Time.now.utc.iso8601}]: connection error. Retrying in 20 seconds..."
+			sleep 20
+			retry
 		end
-		
-		list_since = Time.now.utc.iso8601
-		
-		sleep NOTIFY_DELAY
 	end
 end
 
 consumer_thread = Thread.new do
 	while true
-		sleep 10 while queue.empty?
-		
-		h = nil
-		Thread.exclusive do
-			h = queue.shift
-		end
-		
-		puts "Consumer[#{Time.now.utc.iso8601}]: got an article #{h['title']}"
-		puts "Consumer[#{Time.now.utc.iso8601}]: article created at #{h['timestamp']}, waiting..."
-		sleep 10 until (Time.now.utc-NOTIFY_DELAY).iso8601 >= h['timestamp']
-		
-		puts "Consumer[#{Time.now.utc.iso8601}]: time to handle #{h['title']}"
-		
-		p = Page.new h['title']
-		
-		dowarn = false
-		why = ''
-		
-		if p.text == ''
-			why = 'deleted'
-		elsif p.text =~ /przypisy/i and p.text =~ /<ref/
-			why = 'perfect'
-		elsif p.text =~ /bibliografia|źródł[ao]|literatura/i
-			why = 'willdo'
-		else
-			if p.text =~ /\{\{ek/i
-				why = 'EK'
-			elsif p.text =~ /\{\{disambig\}\}/i
-				why = 'disambig'
-			elsif p.text =~ /\A#(patrz|redirect|przekieruj)/i
-				why = 'redirect'
-			elsif p.text =~ /linki zewn/i
-				why = 'linki zewn'
-			else
-				why = 'no sources!'
-				dowarn = true
-			end
-		end
-		
-		puts "Consumer[#{Time.now.utc.iso8601}]: article state: #{why}"
-		
-		if dowarn
-			puts "Consumer[#{Time.now.utc.iso8601}]: warning user #{h['user']}..."
-			volunteers = File.readlines('ochotnicy.txt')
+		begin
+			sleep 10 while queue.empty?
 			
-			heading = "Prośba o źródła w artykule [[#{h['title']}]]"
-			message = "{{pamiętaj o źródłach|#{h['title']}|#{volunteers.sample.strip}}}"
-			drop_a_message "User talk:#{h['user']}", heading, message
+			h = nil
+			Thread.exclusive do
+				h = queue.shift
+			end
+			
+			puts "Consumer[#{Time.now.utc.iso8601}]: got an article #{h['title']}"
+			puts "Consumer[#{Time.now.utc.iso8601}]: article created at #{h['timestamp']}, waiting..."
+			sleep 10 until (Time.now.utc-NOTIFY_DELAY).iso8601 >= h['timestamp']
+			
+			puts "Consumer[#{Time.now.utc.iso8601}]: time to handle #{h['title']}"
+			
+			p = Page.new h['title']
+			
+			dowarn = false
+			why = ''
+			
+			if p.text == ''
+				why = 'deleted'
+			elsif p.text =~ /przypisy/i and p.text =~ /<ref/
+				why = 'perfect'
+			elsif p.text =~ /bibliografia|źródł[ao]|literatura/i
+				why = 'willdo'
+			else
+				if p.text =~ /\{\{ek/i
+					why = 'EK'
+				elsif p.text =~ /\{\{disambig\}\}/i
+					why = 'disambig'
+				elsif p.text =~ /\A#(patrz|redirect|przekieruj)/i
+					why = 'redirect'
+				elsif p.text =~ /linki zewn/i
+					why = 'linki zewn'
+				else
+					why = 'no sources!'
+					dowarn = true
+				end
+			end
+			
+			puts "Consumer[#{Time.now.utc.iso8601}]: article state: #{why}"
+			
+			if dowarn
+				puts "Consumer[#{Time.now.utc.iso8601}]: warning user #{h['user']}..."
+				volunteers = File.readlines('ochotnicy.txt')
+				
+				heading = "Prośba o źródła w artykule [[#{h['title']}]]"
+				message = "{{pamiętaj o źródłach|#{h['title']}|#{volunteers.sample.strip}}}"
+				drop_a_message "User talk:#{h['user']}", heading, message
+			end
+			
+			puts "Consumer[#{Time.now.utc.iso8601}]: done. Sleeping..."
+			
+		rescue Errno::ETIMEDOUT, RestClient::RequestFailed, RestClient::ServerBrokeConnection, SocketError
+			Thread.exclusive do
+				queue << h
+			end
+			
+			puts "Consumer[#{Time.now.utc.iso8601}]: connection error. Retrying in 20 seconds..."
+			puts "Consumer[#{Time.now.utc.iso8601}]: (current article, #{h['title']}, moved to the end of queue)"
+			sleep 20
+			retry
 		end
-		
-		puts "Consumer[#{Time.now.utc.iso8601}]: done. Sleeping..."
 	end
 end
 
