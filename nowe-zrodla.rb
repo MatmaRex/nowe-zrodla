@@ -84,7 +84,7 @@ consumer_thread = Thread.new do
 				why = 'deleted'
 			elsif p.text =~ /przypisy/i and p.text =~ /<ref/
 				why = 'perfect'
-			elsif p.text =~ /bibliografia|źródł[ao]|literatura/i
+			elsif p.text =~ /bibliografia|[źżz]ródł[ao]|literatura/i
 				why = 'willdo'
 			else
 				if p.text =~ /\{\{ek/i
