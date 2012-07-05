@@ -24,7 +24,7 @@ s.summary = nil # ensure we can't save unless summary for edit given
 Thread.abort_on_exception = true
 
 # Delay between creation of an article and notification, in seconds.
-NOTIFY_DELAY = 60*15
+NOTIFY_DELAY = 60*45
 
 queue = []
 
