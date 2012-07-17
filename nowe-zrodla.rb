@@ -51,7 +51,7 @@ producer_thread = Thread.new do
 			
 			sleep NOTIFY_DELAY
 			
-		rescue Errno::ETIMEDOUT, RestClient::RequestFailed, RestClient::ServerBrokeConnection, SocketError
+		rescue Exception
 			puts "Producer[#{Time.now.utc.iso8601}]: connection error. Retrying in 20 seconds..."
 			sleep 20
 			retry
@@ -114,7 +114,7 @@ consumer_thread = Thread.new do
 			
 			puts "Consumer[#{Time.now.utc.iso8601}]: done. Sleeping..."
 			
-		rescue Errno::ETIMEDOUT, RestClient::RequestFailed, RestClient::ServerBrokeConnection, SocketError
+		rescue Exception
 			Thread.exclusive do
 				queue << h
 			end
