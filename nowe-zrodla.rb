@@ -82,7 +82,7 @@ consumer_thread = Thread.new do
 			
 			if p.text == ''
 				why = 'deleted'
-			elsif p.text =~ /przypisy/i and p.text =~ /<ref/
+			elsif p.text =~ /(?:\{\{|==+ *)przypisy|<references/i and p.text =~ /<ref/
 				why = 'perfect'
 			elsif p.text =~ /\{\{(szablon|template|)zwierzę infobox[\s\S]+\|\s*TSN\s*=\s*\d+/i
 				why = 'magicznerefy'
