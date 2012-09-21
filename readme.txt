@@ -1,4 +1,5 @@
 Skrypt upominający autorów nowych haseł na Wikipedii, którzy nie podają źródeł.
+Lista ochotników, których bot podaje jako chętnych do pomocy: http://tools.wikimedia.pl/~matmarex/ochotnicy.txt
 
 A script to notify authors on new articles on pl.wikipedia who don't provide sources.
 
