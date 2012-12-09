@@ -91,7 +91,7 @@ consumer_thread = Thread.new do
 			else
 				if p.text =~ /\{\{ek/i
 					why = 'EK'
-				elsif p.text =~ /\{\{disambig\}\}/i
+				elsif p.text =~ /\{\{(disambig|ujednoznacznienie)\}\}/i
 					why = 'disambig'
 				elsif p.text =~ /\A#(patrz|redirect|przekieruj)/i
 					why = 'redirect'
