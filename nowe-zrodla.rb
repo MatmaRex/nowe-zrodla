@@ -84,7 +84,7 @@ consumer_thread = Thread.new do
 				why = 'deleted'
 			elsif p.text =~ /(?:\{\{|==+ *)przypisy|<references/i and p.text =~ /<ref/
 				why = 'perfect'
-			elsif p.text =~ /zwierzę infobox/i and p.text =~ /\|\s*(TSN|status IUCN)\s*=\s*\d+/
+			elsif p.text =~ /zwierzę infobox/i and p.text =~ /\|\s*(TSN|status IUCN|IUCN id)\s*=\s*\d+/
 				why = 'magicznerefy'
 			elsif p.text =~ /bibliografia|[źżz]ródł[ao]|literatura/i
 				why = 'willdo'
