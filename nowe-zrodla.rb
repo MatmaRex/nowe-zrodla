@@ -110,7 +110,7 @@ consumer_thread = Thread.new do
 				volunteers = File.readlines('ochotnicy.txt')
 				
 				heading = "Prośba o źródła w artykule [[#{h['title']}]]"
-				message = "{{pamiętaj o źródłach|#{h['title']}|#{volunteers.sample.strip}}}"
+				message = "{{pamiętaj o źródłach|#{h['title']}|#{volunteers.sample.strip}|~~~~~}}"
 				drop_a_message "User talk:#{h['user']}", heading, message
 			end
 			
